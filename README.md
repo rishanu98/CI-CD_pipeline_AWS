@@ -137,12 +137,3 @@ Notes:
 - If Jetty binding fails, ensure port 8080 is free or change the port in the Jetty plugin configuration.
 - SonarQube: check `sonar-setup.sh` for system requirements (Java 21 for recent SonarQube releases).
 
-## Next Steps / Recommendations
-
-- Add a `Docker-files` directory if the Jenkins pipeline's Docker context is missing.
-- Add a `deploy` directory containing ECS task and service definitions (CloudFormation/terraform) for repeatable infra.
-
----
-
-If you want, I can: (1) add example `docker` and `ecs` configurations, (2) create a CONTRIBUTING.md, or (3) commit and push these changes to the remote.
-
