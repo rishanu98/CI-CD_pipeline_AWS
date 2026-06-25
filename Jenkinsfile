@@ -11,13 +11,19 @@ pipeline {
     }
 
     tools {
-        maven 'Maven'
-        jdk 'JDK'
+        maven 'MAVEN3.9'
+        jdk 'JDK17'
     }
 
     stages {
 
-        stage('BUILD'){
+        stage('Fetch code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/rishanu98/CI-CD_pipeline_AWS.git'
+            }
+        }
+
+        stage('Build'){
             steps {
                 sh 'mvn clean install -DskipTests'
             }
@@ -29,9 +35,26 @@ pipeline {
             }
         }
 
-        stage("Test") {
+        stage("Unit Test") {
             steps {
                 sh 'mvn test'
+            }
+        }
+
+        stage("Integration Test") {
+            steps {
+                sh 'mvn verify -DskipUnitTests'
+            }
+        }
+
+        stage("Code Analysis with checkstyle") {
+            steps {
+                sh 'mvn checkstyle:checkstyle'
+            }
+            post {
+                success {
+                    echo "Generated code Analysis Result"
+                }
             }
         }
 
@@ -51,6 +74,14 @@ pipeline {
                     -Dsonar.junit.reportsPath=target/surefire-reports/ \
                     -Dsonar.java.checkstyle.reportPaths=target/checkstyle-result.xml
                     '''
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -78,6 +109,7 @@ pipeline {
         }
 
         stage("Deploy to AWS ECS") {
+
             steps {
                 withAWS(credentials: "${awsCred}", region: "${region}") {
                     sh '''
