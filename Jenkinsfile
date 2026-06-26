@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        registryUrl = "https://<aws-account-id>.dkr.ecr.us-east-1.amazonaws.com"
-        imageName   = "<aws-account-id>.dkr.ecr.us-east-1.amazonaws.com/vprofile-app"
+        registryUrl = "https://471112617705.dkr.ecr.us-east-1.amazonaws.com"
+        imageName   = "471112617705.dkr.ecr.us-east-1.amazonaws.com/vprofile-app"
         awsCred     = "awscred"
-        cluster     = "vprofile-cluster"
-        service     = "vprofile-service"
+        cluster     = "vprofileapp"
+        service     = "vproappservice"
         region      = "us-east-1"
     }
 

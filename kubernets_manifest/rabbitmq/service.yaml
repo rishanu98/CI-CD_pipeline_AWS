@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rmq01
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    protocol: TCP
+    port: 5672
+    targetPort: rabbitmqport
+  type: ClusterIP

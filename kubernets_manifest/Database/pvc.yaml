@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: db-volume-claim
+  lables:
+    app: webappdb
+spec: 
+  accessModes:  
+    - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 3Gi
+
+  
