@@ -18,6 +18,6 @@ spec:
       - name: memcached
         image: memcached
         ports:
-        - name: memcached_port
+        - name: memcachedport
           containerPort: 11211
           protocol: TCP

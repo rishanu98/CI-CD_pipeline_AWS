@@ -18,15 +18,10 @@ spec:
       - name: vprodb
         image: vprocontainers/vprofiledb
         ports:
-        - name: vprodb-port
-        - containerPort: 3306
-        env: 
-          - name: ROOT_USERNAME
-            valueFrom:
-              secretKeyRef:
-                name: db-secret
-                key: db_username
-          - name: ROOT_PASSWORD
+          - name: vprodb-port
+            containerPort: 3306
+        env:
+          - name: MYSQL_ROOT_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: db-secret
@@ -38,11 +33,10 @@ spec:
         - name: vpro-db-data
           persistentVolumeClaim:
               claimName: db-volume-claim
-
-      initContainer:
+      initContainers:
         - name: busybox
           image: busybox:latest
-          args: ["rm", "-rf", "/var/lib/mysql/lost+found"]
+          command: ["sh", "-c", "rm -rf /var/lib/mysql/lost+found"]
           volumeMounts:
             - name: vpro-db-data
               mountPath: /var/lib/mysql  
