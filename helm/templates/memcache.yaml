@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memcached
+  labels:
+    app: memcached
+    {{- include "vprofile.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.memcache.replicas }}
+  selector:
+    matchLabels:
+      app: memcached
+  template:
+    metadata:
+      labels:
+        app: memcached
+    spec:
+      containers:
+        - name: memcached
+          image: {{ .Values.memcache.image }}
+          ports:
+            - name: memcachedport
+              containerPort: {{ .Values.memcache.port }}
+              protocol: TCP

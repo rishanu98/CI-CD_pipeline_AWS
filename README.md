@@ -1,139 +1,92 @@
-# VProfile — Visualpathit VProfile Webapp
+# VProfile Infrastructure
 
-## Project Overview
+## Overview
 
-VProfile is a Java-based web application (WAR) providing user profile and account management functionality. It uses Spring (MVC, Security, Data JPA) with Hibernate, and integrates with Elasticsearch, RabbitMQ and Memcached. The repository includes CI/CD pipelines, infrastructure provisioning scripts, and helper tooling for building, testing and deploying the application to AWS ECS.
+This repository contains infrastructure and deployment artifacts for VProfile. It is focused on local infrastructure setup, container orchestration, and provisioning scripts rather than Java application build instructions.
 
-## Architecture & Components
+Components covered here:
+- Docker Compose services
+- Kubernetes manifests
+- Helm chart
+- Jenkins / Nexus / SonarQube provisioning scripts
+- Vagrant provisioning configurations
 
-- **Backend:** Java 17, Spring Framework (web, webmvc, security, data-jpa), Hibernate
-- **Persistence:** MySQL (connector present) for application data; SQL migrations/backups found under `src/main/resources/` (e.g. `accountsdb.sql`, `db_backup.sql`).
-- **Search:** Elasticsearch client libraries integrated for search features.
-- **Messaging:** RabbitMQ (`spring-rabbit`, `amqp-client`).
-- **Caching:** Memcached (spymemcached).
-- **Webapp:** Traditional JSP-based views under `src/main/webapp/WEB-INF/views/`.
+## Local Setup — Minimal Steps
 
-## Tools & Technologies Used
+### 1. Prerequisites
 
-- **Java 17** — language/runtime target (see `pom.xml`).
-- **Maven** — build system (`pom.xml`, `mvn clean install`, plugins: war, jetty, jacoco).
-- **Jetty** — local dev/test via `jetty-maven-plugin` (embedded run).
-- **JUnit / Mockito** — unit testing frameworks.
-- **JaCoCo** — code coverage reporting.
-- **Elasticsearch** — search engine integration (client libs in `pom.xml`).
-- **RabbitMQ** — messaging broker (Spring AMQP).
-- **Memcached** — caching layer (spymemcached).
-- **MySQL** — primary relational database.
-- **Logback / Log4j** — logging frameworks.
-- **Docker** — application containerization (Jenkinsfile builds Docker images).
-- **AWS ECR / ECS** — container registry and orchestration target used in CI/CD.
-- **Jenkins** — CI/CD server (pipeline defined in `Jenkinsfile`).
-- **SonarQube** — static code analysis integration (Jenkins stage + `sonar-scanner`).
-- **Nexus** — artifact repository provisioning scripts included.
-- **Nginx** — reverse proxy (used in SonarQube provisioning script).
-- **Vagrant** — local/VM provisioning (Vagrantfiles under `vagrant/`).
-- **Bash scripts** — provisioning helpers in `userdata/` (e.g. `jenkins-setup.sh`, `nexus-setup.sh`, `sonar-setup.sh`).
-- **Slack** — build notifications from Jenkins pipeline.
+- Docker installed
+- Docker Compose support (`docker compose` or `docker-compose`)
+- Optional for Kubernetes: `kubectl`, `helm`, and a local cluster provider such as `kind`, `minikube`, or `k3d`
 
-## Prerequisites (Developer)
+### 2. Run with Docker Compose
 
-- Java 17 (JDK) installed
-- Maven 3.6+
-- MySQL server (or Dockerized MySQL)
-- Docker (for local image builds)
-- (Optional) Vagrant + VirtualBox if using provided Vagrant provisioning
+From the repository root:
 
-## Local Development — Quick Start
+    docker compose up -d
 
-1. Build the project:
+Verify the services:
 
-	 mvn clean install
+    docker compose ps
 
-2. Run locally with Jetty (for development):
+Stop and remove containers:
 
-	 mvn jetty:run
+    docker compose down
 
-3. Access the webapp at: http://localhost:8080/
+This Compose stack uses local build contexts in `Docker-files/db`, `Docker-files/app`, and `Docker-files/web`.
 
-4. Database:
+### 3. Run with Kubernetes manifests
 
-	 - Import the schema/sample data from `src/main/resources/accountsdb.sql` into your local MySQL instance.
-	 - Update `src/main/resources/application.properties` with your DB credentials and connection URL.
+If you want a local Kubernetes deployment, ensure your cluster is running and then apply the manifests:
 
-## Running Tests & Coverage
+    kubectl apply -f kubernets_manifest/
 
-- Run unit tests:
+Check the deployed resources:
 
-	mvn test
+    kubectl get pods,svc -A
 
-- Generate coverage report (JaCoCo is configured in `pom.xml`):
+If you need to remove the deployment:
 
-	mvn verify
+    kubectl delete -f kubernets_manifest/
 
-Reports will be produced under `target/site/jacoco`.
+### 4. Run with Helm
 
-## CI/CD (Jenkins) Overview
+Install or upgrade the chart from `helm/`:
 
-- The pipeline is defined in `Jenkinsfile` and implements the following stages:
-	- Build (`mvn clean install`), archive WAR artifacts
-	- Test (`mvn test`)
-	- Static analysis (SonarQube via `sonar-scanner`)
-	- Docker image build (expects image context at `./Docker-files/app/multistage/`)
-	- Push image to AWS ECR
-	- Deploy to AWS ECS (updates service to force new deployment)
-	- Slack notifications for success/failure/completion
+    helm upgrade --install vprofile ./helm -f ./helm/values.yaml
 
-## Docker / AWS Deployment
+Verify the Helm release:
 
-- Jenkins builds images and pushes to AWS ECR using credentials configured in the pipeline.
-- ECS is used to run the containers; the `Jenkinsfile` calls `aws ecs update-service` to trigger deployments.
+    helm list
+    kubectl get all -A
 
-## Docker (local) — Build, Run & Push
+Remove the release:
 
-This project uses Docker in CI and can be built and run locally. The Jenkins pipeline expects the Docker build context at `./Docker-files/app/multistage/` (multi-stage Dockerfile).
+    helm uninstall vprofile
 
-1) Build locally (from repo root):
+## Key Files and Directories
 
-	docker build -t vprofile-app:local ./Docker-files/app/multistage/
+- `docker-compose.yaml` — local Docker Compose deployment definition
+- `Docker-files/` — Docker build contexts for database, application, and web components
+- `kubernets_manifest/` — Kubernetes YAML manifests for deployment, services, PVCs, and secrets
+- `helm/` — Helm chart for the VProfile deployment
+- `Jenkinsfile` — CI/CD pipeline definition
+- `userdata/jenkins-setup.sh` — Jenkins provisioning script
+- `userdata/nexus-setup.sh` — Nexus repository provisioning script
+- `userdata/sonar-setup.sh` — SonarQube provisioning script
+- `vagrant/` — VM provisioning configurations and helper scripts
 
-2) Run locally (adjust port as needed):
+## Provisioning Scripts
 
-	docker run --rm -p 8080:8080 vprofile-app:local
+Use these scripts for infrastructure provisioning on a target VM or server:
 
-3) Tag and push to AWS ECR (example for `us-east-1` — replace `<aws-account-id>` and `region`):
+- `userdata/jenkins-setup.sh`
+- `userdata/nexus-setup.sh`
+- `userdata/sonar-setup.sh`
 
-	aws ecr create-repository --repository-name vprofile-app --region us-east-1 || true
-	aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <aws-account-id>.dkr.ecr.us-east-1.amazonaws.com
-	docker tag vprofile-app:local <aws-account-id>.dkr.ecr.us-east-1.amazonaws.com/vprofile-app:latest
-	docker push <aws-account-id>.dkr.ecr.us-east-1.amazonaws.com/vprofile-app:latest
+## Notes
 
-Notes:
-- Jenkins tags images using the build number (`${BUILD_NUMBER}`) and also pushes a `latest` tag.
-- If `./Docker-files/app/multistage/` is missing, add a Dockerfile there or update the `Jenkinsfile` to point to your Docker context.
-
-
-## Provisioning & Other Scripts
-
-- `userdata/jenkins-setup.sh` — installs Jenkins server (Ubuntu/Debian).
-- `userdata/nexus-setup.sh` — installs and configures Nexus repository.
-- `userdata/sonar-setup.sh` — installs SonarQube, PostgreSQL, Nginx and configures system settings.
-- `vagrant/` — Vagrant configurations and provisioning scripts for different environments (Mac/Win).
-
-## Important Paths
-
-- Application properties: `src/main/resources/application.properties`
-- Database scripts: `src/main/resources/accountsdb.sql`, `src/main/resources/db_backup.sql`
-- Web views: `src/main/webapp/WEB-INF/views/`
-- CI Pipeline: `Jenkinsfile`
-
-## Contributing
-
-- Fork the repository and create feature branches.
-- Follow code style used in the project and include unit tests for new logic.
-- Run `mvn test` and ensure SonarQube checks pass before submitting a PR.
-
-## Troubleshooting
-
-- If Jetty binding fails, ensure port 8080 is free or change the port in the Jetty plugin configuration.
-- SonarQube: check `sonar-setup.sh` for system requirements (Java 21 for recent SonarQube releases).
+- This README is intentionally infrastructure-focused and does not provide Java application build or runtime instructions.
+- For local infra validation, Docker Compose is the quickest path.
+- Kubernetes and Helm manifests are included for cluster-based deployment.
 

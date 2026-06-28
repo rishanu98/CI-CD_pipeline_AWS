@@ -1,0 +1,28 @@
+app:
+  image: rishanu68/vprofileapp
+  replicas: 1
+  port: 8080
+
+db:
+  image: rishanu68/vprofiledb
+  replicas: 1
+  port: 3306 
+  password: dnByb2RicGFzcw==   # base64: vprodbpass
+  storage: 3Gi
+  storageClassName: standard
+
+memcache:
+  image: memcached
+  replicas: 1
+  port: 11211
+
+rabbitmq:
+  image: rabbitmq
+  replicas: 1
+  port: 5672
+  user: guest
+  password: Z3Vlc3Q=
+
+ingress:
+  host: vprofile.local
+  ingressClassName: nginx

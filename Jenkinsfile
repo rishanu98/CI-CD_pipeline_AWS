@@ -16,7 +16,13 @@ pipeline {
     }
 
     stages {
-
+        
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        
         stage('Fetch code') {
             steps {
                 git branch: 'main', url: 'https://github.com/rishanu98/CI-CD_pipeline_AWS.git'
