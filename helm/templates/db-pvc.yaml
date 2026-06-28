@@ -10,4 +10,4 @@ spec:
   storageClassName: {{ .Values.db.storageClassName }}
   resources:
     requests:
-      storage: {{ .Values.db.storage }}
+      storage: {{ .Values.db.storageSize }}

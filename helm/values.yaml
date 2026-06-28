@@ -8,7 +8,7 @@ db:
   replicas: 1
   port: 3306 
   password: dnByb2RicGFzcw==   # base64: vprodbpass
-  storage: 3Gi
+  storageSize: 3Gi
   storageClassName: standard
 
 memcache:
@@ -25,4 +25,4 @@ rabbitmq:
 
 ingress:
   host: vprofile.local
-  ingressClassName: nginx
+  ingressClassName: alb

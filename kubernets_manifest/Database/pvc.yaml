@@ -8,6 +8,6 @@ spec:
   storageClassName: standard
   resources:
     requests:
-      storage: 3Gi
+      storage: {{ .Values.db.storageSize }}
 
   
