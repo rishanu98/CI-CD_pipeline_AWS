@@ -2,27 +2,33 @@ pipeline {
     agent any
 
     environment {
-        registryUrl = "https://471112617705.dkr.ecr.us-east-1.amazonaws.com"
-        imageName   = "471112617705.dkr.ecr.us-east-1.amazonaws.com/vprofile-app"
-        awsCred     = "awscred"
-        cluster     = "vprofileapp"
-        service     = "vproappservice"
-        region      = "us-east-1"
+        AWS_ACCOUNT_ID = credentials('ACCOUNT_ID')
+        AWS_ECR_REPO_NAME = credentials('AWS_ECR_REPO_NAME')
+        AWS_CLUSTER_NAME = credentials('AWS_CLUSTER_NAME')
+        REPOSITORY_URI  = "${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com"
+        AWS_DEFAULT_REGION      = "us-east-1"
+        SLACK_CHANNEL    = '#aws-cicd-test'
+
+        // --- New: Git + Helm values config ---
+        GIT_REPO_URL     = 'github.com/rishanu98/CI-CD_pipeline_AWS.git'
+        HELM_VALUES_PATH = 'helm/values.yaml'
+        GIT_USER_NAME    = 'rishanu98'
+        GIT_USER_EMAIL   = 'anushab298@gmail.com'
     }
 
     tools {
         maven 'MAVEN3.9'
-        jdk 'JDK17'
+        jdk 'JDK21'
     }
 
     stages {
-        
+
         stage('Cleaning Workspace') {
             steps {
                 cleanWs()
             }
         }
-        
+
         stage('Fetch code') {
             steps {
                 git branch: 'main', url: 'https://github.com/rishanu98/CI-CD_pipeline_AWS.git'
@@ -66,7 +72,7 @@ pipeline {
 
         stage("Code Analysis with SonarQube") {
             environment {
-                scannerHome = tool 'sonar-scanner'
+                scannerHome = tool 'SonarScanner'
             }
             steps {
                 withSonarQubeEnv('sonarserver') {
@@ -95,10 +101,11 @@ pipeline {
         stage("Build Docker Image") {
             steps {
                 script {
-                    dockerImage = docker.build(
-                        "${imageName}:${BUILD_NUMBER}",
-                        "./Docker-files/app/multistage/"
-                    )
+                    dir('./Docker-files/app/') {
+                            sh 'docker system prune -f'
+                            sh 'docker container prune -f'
+                            sh 'docker build -t ${AWS_ECR_REPO_NAME} .'
+                    }
                 }
             }
         }
@@ -106,24 +113,47 @@ pipeline {
         stage("Push Image to AWS ECR") {
             steps {
                 script {
-                    docker.withRegistry(registryUrl, "ecr:${region}:${awsCred}") {
-                        dockerImage.push("${BUILD_NUMBER}")
-                        dockerImage.push("latest")
+                    sh '''
+                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
+                        echo "Building: ${AWS_ECR_REPO_NAME}"
+                        echo "Pushing to: ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}"
+                        docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                        docker push ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                       '''
                     }
                 }
-            }
         }
 
-        stage("Deploy to AWS ECS") {
-
+        stage("Update Helm values.yaml and Push to GitHub") {
             steps {
-                withAWS(credentials: "${awsCred}", region: "${region}") {
-                    sh '''
-                    aws ecs update-service \
-                    --cluster ${cluster} \
-                    --service ${service} \
-                    --force-new-deployment
-                    '''
+                script {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'GITHUB_TOKEN',   // your actual credential ID
+                        usernameVariable: 'GIT_USERNAME',
+                        passwordVariable: 'GIT_TOKEN'
+                    )]) {
+                        sh '''
+                            set -e
+
+                            sed -i "s|^\\(\\s*repository:\\s*\\).*|\\1${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}|" ${HELM_VALUES_PATH}
+                            sed -i "s|^\\(\\s*tag:\\s*\\).*|\\1\\"${BUILD_NUMBER}\\"|" ${HELM_VALUES_PATH}
+
+                            echo "Updated values.yaml:"
+                            cat ${HELM_VALUES_PATH}
+
+                            git config user.name "${GIT_USERNAME}"
+                            git config user.email "$anushab298@gmail.com"
+
+                            git add ${HELM_VALUES_PATH}
+
+                            if git diff --cached --quiet; then
+                                echo "No changes to commit."
+                            else
+                                git commit -m "ci: update image tag to ${BUILD_NUMBER} [skip ci]"
+                                git push https://${GIT_USERNAME}:${GIT_TOKEN}@${GIT_REPO_URL} HEAD:main
+                            fi
+                        '''
+                    }
                 }
             }
         }
@@ -132,26 +162,30 @@ pipeline {
     post {
         success {
             slackSend(
-                channel: '#all-javacicdproject',
+                channel: SLACK_CHANNEL,
                 color: 'good',
-                message: "Build #${env.BUILD_NUMBER} succeeded and deployed successfully."
+                message: "Build #${env.BUILD_NUMBER} succeeded and deployed successfully. (${env.BUILD_URL})"
             )
         }
 
         failure {
             slackSend(
-                channel: '#all-javacicdproject',
+                channel: SLACK_CHANNEL,
                 color: 'danger',
-                message: "Build #${env.BUILD_NUMBER} failed. Please check Jenkins logs."
+                message: "Build #${env.BUILD_NUMBER} failed. Please check Jenkins logs. (${env.BUILD_URL})"
+            )
+        }
+
+        unstable {
+            slackSend(
+                channel: SLACK_CHANNEL,
+                color: 'warning',
+                message: "Build #${env.BUILD_NUMBER} is unstable. Check test results. (${env.BUILD_URL})"
             )
         }
 
         always {
-            slackSend(
-                channel: '#all-javacicdproject',
-                color: 'warning',
-                message: "Build #${env.BUILD_NUMBER} completed."
-            )
+            echo "Pipeline finished with status: ${currentBuild.currentResult}"
         }
     }
 }

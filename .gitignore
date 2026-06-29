@@ -1,2 +1,5 @@
 *.txt
 Jenkinsfile copy
+*.pem
+.terraform
+*.hcl
