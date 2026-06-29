@@ -27,7 +27,7 @@ spec:
           command: ['sh', '-c', "until nslookup vpromq01.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for rabbitmq; sleep 2; done"]
       containers:
         - name: webappimage
-          image: {{ .Values.app.image }}
+          image: {{ .Values.app.image }}:{{ .Values.app.tag | default "latest" }}
           ports:
             - name: vproapp-port
               containerPort: {{ .Values.app.port }}

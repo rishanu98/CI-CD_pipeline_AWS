@@ -136,7 +136,6 @@ pipeline {
                             set -e
 
                             sed -i "s|^\\(\\s*repository:\\s*\\).*|\\1${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}|" ${HELM_VALUES_PATH}
-                            sed -i "s|^\\(\\s*tag:\\s*\\).*|\\1\\"${BUILD_NUMBER}\\"|" ${HELM_VALUES_PATH}
 
                             echo "Updated values.yaml:"
                             cat ${HELM_VALUES_PATH}
