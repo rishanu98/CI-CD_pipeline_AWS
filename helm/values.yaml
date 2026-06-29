@@ -1,6 +1,6 @@
 app:
   image: 471112617705.dkr.ecr.us-east-1.amazonaws.com/vprofile-app-image
-  tag: latest
+  tag: "40"
   replicas: 1
   port: 8080
 
