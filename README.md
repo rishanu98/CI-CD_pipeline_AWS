@@ -2,6 +2,9 @@
 
 ![WebApp Infrastructure Demo](asset/AWS_CI_CD.gif)
 
+# ArgoCD setup
+![ArgoCD setup Demo](asset/argocd_Setup.png)
+
 ## Overview
 
 This repository contains infrastructure and deployment artifacts for VProfile. It is focused on local infrastructure setup, container orchestration, and provisioning scripts rather than Java application build instructions.
