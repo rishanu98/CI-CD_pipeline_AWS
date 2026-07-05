@@ -52,7 +52,7 @@ helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-contro
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller
 
-# If we want to create a service account on the the gap between rich and poor
+# If we want to create a service account on the go 
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
   --set clusterName=<your-cluster-name> \
