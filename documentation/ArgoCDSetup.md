@@ -52,6 +52,16 @@ helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-contro
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller
 
+# If we want to create a service account on the the gap between rich and poor
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=<your-cluster-name> \
+  --set serviceAccount.create=true \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=<lb_controller_irsa_role_arn> \
+  --set region=<your-region> \
+  --set vpcId=<your-vpc-id>
+
 # 7. Verify controller.
 
 kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller

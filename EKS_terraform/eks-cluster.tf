@@ -1,13 +1,13 @@
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
-  version        = "19.0.4"
+  version         = "19.0.4"
   cluster_name    = local.cluster_name
   cluster_version = var.kubernetes_version
 
   vpc_id                         = module.vpc.vpc_id
   subnet_ids                     = module.vpc.private_subnets
   cluster_endpoint_public_access = true
-  enable_irsa = true
+  enable_irsa                    = true
 
   eks_managed_node_group_defaults = {
     ami_type = "AL2_x86_64"
@@ -36,3 +36,15 @@ module "eks" {
     }
   }
 }
+
+resource "aws_eks_addon" "ebs_csi_driver" {
+  cluster_name             = module.eks.cluster_name
+  addon_name               = "aws-ebs-csi-driver"
+  service_account_role_arn = aws_iam_role.ebs_csi.arn
+
+  depends_on = [
+    module.eks,
+    aws_iam_role_policy_attachment.ebs_csi_iam_role_policy_attach
+  ]
+}
+

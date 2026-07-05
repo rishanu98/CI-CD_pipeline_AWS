@@ -25,5 +25,4 @@ rabbitmq:
   password: Z3Vlc3Q=
 
 ingress:
-  host: vprofile.local
   ingressClassName: alb
