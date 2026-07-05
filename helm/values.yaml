@@ -10,7 +10,7 @@ db:
   port: 3306 
   password: dnByb2RicGFzcw==   # base64: vprodbpass
   storageSize: 3Gi
-  storageClassName: default
+  storageClassName: gp2
 
 memcache:
   image: memcached
