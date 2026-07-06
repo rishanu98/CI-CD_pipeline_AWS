@@ -4,7 +4,6 @@ pipeline {
     environment {
         AWS_ACCOUNT_ID = credentials('ACCOUNT_ID')
         AWS_ECR_REPO_NAME = credentials('AWS_ECR_REPO_NAME')
-        AWS_CLUSTER_NAME = credentials('AWS_CLUSTER_NAME')
         REPOSITORY_URI  = "${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com"
         AWS_DEFAULT_REGION      = "us-east-1"
         SLACK_CHANNEL    = '#aws-cicd-test'
@@ -113,15 +112,22 @@ pipeline {
         stage("Push Image to AWS ECR") {
             steps {
                 script {
-                    sh '''
-                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
-                        echo "Building: ${AWS_ECR_REPO_NAME}"
-                        echo "Pushing to: ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}"
-                        docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
-                        docker push ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
-                       '''
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'AWS_CREDENTIALS',  // your actual AWS credentials ID
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh '''
+                            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}
+                            echo "Building: ${AWS_ECR_REPO_NAME}"
+                            echo "Pushing to: ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}"
+                            docker tag ${AWS_ECR_REPO_NAME} ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                            docker push ${REPOSITORY_URI}/${AWS_ECR_REPO_NAME}:${BUILD_NUMBER}
+                        '''
                     }
                 }
+            }
         }
 
         stage("Update Helm values.yaml and Push to GitHub") {
@@ -141,7 +147,7 @@ pipeline {
                             cat ${HELM_VALUES_PATH}
 
                             git config user.name "${GIT_USERNAME}"
-                            git config user.email "$anushab298@gmail.com"
+                            git config user.email "${GIT_USER_EMAIL}"
 
                             git add ${HELM_VALUES_PATH}
 
@@ -161,7 +167,7 @@ pipeline {
     post {
         success {
             slackSend(
-                channel: SLACK_CHANNEL,
+                channel: env.SLACK_CHANNEL,
                 color: 'good',
                 message: "Build #${env.BUILD_NUMBER} succeeded and deployed successfully. (${env.BUILD_URL})"
             )
@@ -169,7 +175,7 @@ pipeline {
 
         failure {
             slackSend(
-                channel: SLACK_CHANNEL,
+                channel: env.SLACK_CHANNEL,
                 color: 'danger',
                 message: "Build #${env.BUILD_NUMBER} failed. Please check Jenkins logs. (${env.BUILD_URL})"
             )
@@ -177,7 +183,7 @@ pipeline {
 
         unstable {
             slackSend(
-                channel: SLACK_CHANNEL,
+                channel: env.SLACK_CHANNEL,
                 color: 'warning',
                 message: "Build #${env.BUILD_NUMBER} is unstable. Check test results. (${env.BUILD_URL})"
             )
