@@ -5,7 +5,7 @@ app:
   port: 8080
 
 db:
-  image: rishanu68/vprofiledb
+  image: 471112617705.dkr.ecr.us-east-1.amazonaws.com/vprofile-app-image
   replicas: 1
   port: 3306 
   password: dnByb2RicGFzcw==   # base64: vprodbpass
@@ -13,12 +13,12 @@ db:
   storageClassName: gp2
 
 memcache:
-  image: memcached
+  image: 471112617705.dkr.ecr.us-east-1.amazonaws.com/vprofile-app-image
   replicas: 1
   port: 11211
 
 rabbitmq:
-  image: rabbitmq
+  image: 471112617705.dkr.ecr.us-east-1.amazonaws.com/vprofile-app-image
   replicas: 1
   port: 5672
   user: guest
