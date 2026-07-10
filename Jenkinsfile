@@ -127,7 +127,7 @@ pipeline {
                         '''
                     }
                 }
-            }
+            
         }
 
         stage("Update Helm values.yaml and Push to GitHub") {
